@@ -30,6 +30,7 @@ def test_lstm_forward():
 
     torch._C._set_mkldnn_enabled(True)
     rnn1 = nn.LSTM(I, H, L, bidirectional=bidirectional)
+    rnn1.eval()
     output1, hn1 = rnn1(input, (h0, c0))
     hy1, cy1 = hn1
 
@@ -49,6 +50,7 @@ def test_gru_forward():
 
     torch._C._set_mkldnn_enabled(True)
     rnn1 = nn.GRU(I, H, L, bidirectional=bidirectional)
+    rnn1.eval()
     output1, hn1 = rnn1(input, h0)
 
     torch._C._set_mkldnn_enabled(False)
