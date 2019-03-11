@@ -3,6 +3,8 @@ from torch import nn
 import copy
 from torch.nn.utils.rnn import pack_padded_sequence
 import numpy as np
+import os
+
 
 bidirectional = False
 T = 35
@@ -11,6 +13,12 @@ L = 4
 D = 2 if bidirectional else 1
 I = 200
 H = 200
+
+def enable_mkldnn():
+    os.environ["MKLDNN_ENABLED"] = "1"
+
+def disable_mkldnn():
+    os.environ["MKLDNN_ENABLED"] = "0"
 
 def f(t1, t2, msg):
     def to_numpy(t):
@@ -28,13 +36,13 @@ def test_lstm_forward():
     h0 = torch.randn(L*D, N, H)
     c0 = torch.randn(L*D, N, H)
 
-    torch._C._set_mkldnn_enabled(True)
+    disable_mkldnn()
     rnn1 = nn.LSTM(I, H, L, bidirectional=bidirectional)
     rnn1.eval()
     output1, hn1 = rnn1(input, (h0, c0))
     hy1, cy1 = hn1
 
-    torch._C._set_mkldnn_enabled(False)
+    enable_mkldnn()
     rnn2 = copy.deepcopy(rnn1)
     output2, hn2 = rnn2(input, (h0, c0))
     hy2, cy2 = hn2
@@ -48,12 +56,12 @@ def test_gru_forward():
     input = torch.randn(T, N, I)
     h0 = torch.randn(L*D, N, H)
 
-    torch._C._set_mkldnn_enabled(True)
+    disable_mkldnn()
     rnn1 = nn.GRU(I, H, L, bidirectional=bidirectional)
     rnn1.eval()
     output1, hn1 = rnn1(input, h0)
 
-    torch._C._set_mkldnn_enabled(False)
+    enable_mkldnn()
     rnn2 = copy.deepcopy(rnn1)
     output2, hn2 = rnn2(input, h0)
 
@@ -76,12 +84,12 @@ def test_gru_backward(grad_x=False, grad_hx=False):
         hx1.requires_grad_(True)
         hx2.requires_grad_(True)
 
-    torch._C._set_mkldnn_enabled(True)
+    disable_mkldnn()
     rnn1 = nn.GRU(I, H, L, bidirectional=bidirectional)
     output1, hy1 = rnn1(x1, hx1)
     output1.mean().backward(retain_graph=True)
 
-    torch._C._set_mkldnn_enabled(False)
+    enable_mkldnn()
     rnn2 = copy.deepcopy(rnn1)
     output2, hy2 = rnn2(x2, hx2)
     output2.mean().backward(retain_graph=True)
@@ -126,13 +134,13 @@ def test_lstm_backward(grad_x=False, grad_hx=False, grad_cx=False):
         cx1.requires_grad_(True)
         cx2.requires_grad_(True)
 
-    torch._C._set_mkldnn_enabled(True)
+    disable_mkldnn()
     rnn1 = nn.LSTM(I, H, L, bidirectional=bidirectional)
     output1, hn1 = rnn1(x1, (hx1, cx1))
     hy1, cy1 = hn1
     output1.mean().backward(retain_graph=True)
 
-    torch._C._set_mkldnn_enabled(False)
+    enable_mkldnn()
     rnn2 = copy.deepcopy(rnn1)
     output2, hn2 = rnn2(x2, (hx2, cx2))
     hy2, cy2 = hn2
